@@ -1,3 +1,4 @@
+/* eslint-disable indent */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 interface Sender {
   addEventListener: (
@@ -51,6 +52,7 @@ function useValue<T>(
   return typeof value === "function" ? value() : value
 }
 
+// eslint-disable-next-line functional/no-mixed-type
 interface Receive {
   <Controllers extends Record<string, (...args: any[]) => any>>(
     controllers: Controllers,
@@ -61,6 +63,9 @@ interface Receive {
     // eslint-disable-next-line no-undef
     optionsTargetOrigin?: WindowPostMessageOptions
   ): Controllers
+
+  // eslint-disable-next-line functional/no-method-signature
+  cancel(): void
 }
 function useReceive(sender: Sender & Receiver, receiver?: Receiver): Receive
 // eslint-disable-next-line no-redeclare
@@ -70,24 +75,14 @@ function useReceive(sender: Sender, receiver?: Receiver): Receive {
   if (!receiver && "postMessage" in sender)
     receiver = sender as unknown as Receiver
 
-  // is @server
-  function receive<Controllers extends Record<string, (...args: any[]) => any>>(
-    controllers: Controllers,
-    targetOrigin?: string
-  ): Controllers
-  // eslint-disable-next-line no-redeclare
-  function receive<Controllers extends Record<string, (...args: any[]) => any>>(
-    controllers: Controllers,
-    // eslint-disable-next-line no-undef
-    optionsTargetOrigin?: WindowPostMessageOptions
-  ): Controllers
-  // eslint-disable-next-line no-redeclare
+  const handlers = new Set<(event: MessageEvent<unknown>) => void>()
+
   function receive<Controllers extends Record<string, (...args: any[]) => any>>(
     controllers: Controllers,
     // eslint-disable-next-line no-undef
     targetOrigin?: string | WindowPostMessageOptions
   ): Controllers {
-    useValue(sender).addEventListener("message", async ({ data }) => {
+    async function handler({ data }: MessageEvent<unknown>) {
       if (isRequest(data)) {
         // && data.name === names
 
@@ -122,9 +117,20 @@ function useReceive(sender: Sender, receiver?: Receiver): Receive {
           useValue(receiver!).postMessage(responseError, targetOrigin)
         }
       }
-    })
+    }
+
+    useValue(sender).addEventListener("message", handler)
+    handlers.add(handler)
 
     return controllers
+  }
+
+  // eslint-disable-next-line functional/immutable-data
+  receive.cancel = () => {
+    const senderVal = useValue(sender)
+    handlers.forEach((handler) => {
+      senderVal.removeEventListener("message", handler)
+    })
   }
 
   return receive
@@ -152,11 +158,23 @@ interface Send {
   ): Promise<Awaited<ReturnType<Controllers[Name]>>>
 }
 
-function useSend(sender: Sender & Receiver, receiver?: Receiver): Send
+function useSend(
+  sender: Sender & Receiver,
+  receiver?: Receiver,
+  timeout?: false | number
+): Send
 // eslint-disable-next-line no-redeclare
-function useSend(sender: Sender, receiver: Receiver): Send
+function useSend(
+  sender: Sender,
+  receiver: Receiver,
+  timeout?: false | number
+): Send
 // eslint-disable-next-line no-redeclare
-function useSend(sender: Sender, receiver?: Receiver): Send {
+function useSend(
+  sender: Sender,
+  receiver?: Receiver,
+  timeout: false | number = 3e4
+): Send {
   if (!receiver && "postMessage" in sender)
     receiver = sender as unknown as Receiver
 
@@ -202,8 +220,16 @@ function useSend(sender: Sender, receiver?: Receiver): Send {
           arguments: args
         }
         useValue(sender).addEventListener("message", handler)
+        const timer = !timeout
+          ? undefined
+          : setTimeout(() => {
+              // eslint-disable-next-line prefer-promise-reject-errors
+              reject("TIME_OUT")
+              useValue(sender).removeEventListener("message", handler)
+            }, timeout)
         function handler({ data }: MessageEvent<unknown>) {
           if (isResponseResult(data) && data.id === id && data.name === name) {
+            timer && clearTimeout(timer)
             // this result
             resolve(data.result as ReturnType<Controllers[Name]>)
 
@@ -211,6 +237,7 @@ function useSend(sender: Sender, receiver?: Receiver): Send {
             return
           }
           if (isResponseError(data) && data.id === id && data.name === name) {
+            timer && clearTimeout(timer)
             reject(data.error)
 
             useValue(sender).removeEventListener("message", handler)

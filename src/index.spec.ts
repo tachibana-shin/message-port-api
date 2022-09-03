@@ -40,7 +40,7 @@ const sender2: Sender = {
 
 describe("normal", () => {
   const receive = useReceive(sender1, receiver1)
-  const send = useSend(sender2, receiver2)
+  const send = useSend(sender2, receiver2, 3000)
 
   beforeEach(() => {
     events1.all.clear()
@@ -53,7 +53,7 @@ describe("normal", () => {
         return a + b
       }
     })
-    expect<typeof controller>(await send("sum", [1, 2])).toEqual(3)
+    expect(await send<typeof controller>("sum", [1, 2])).toEqual(3)
   })
   test("error", async () => {
     const controller = receive({
@@ -81,6 +81,19 @@ describe("normal", () => {
         return a + b
       }
     })
-    expect<typeof controller>(await send("sum", [1, 2])).toEqual(3)
+    expect(await send<typeof controller>("sum", [1, 2])).toEqual(3)
+  })
+
+  test("cancel", async () => {
+    const controller = receive({
+      sum(a: number, b: number) {
+        return a + b
+      }
+    })
+    receive.cancel()
+
+    await expect(send<typeof controller>("sum", [1, 2])).rejects.toEqual(
+      "TIME_OUT"
+    )
   })
 })

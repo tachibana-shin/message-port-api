@@ -88,6 +88,7 @@ await send("changeBg", ["red"])
 ## API
 
 ### useReceive
+
 This function will be located on the `host` side to handle the requested tasks
 
 ```ts
@@ -102,13 +103,27 @@ function receive(
 ): Controller
 ```
 
+> If you want to cancel the call `receive.cancel()'. This is useful when you use `receive` in components
+```ts
+import { useReceive } from "message-port-api"
+
+const receive = useReceive(self)
+
+receive({ sum })
+
+receive.cancel() // cancel receive call
+```
+
+
 ### useSend
+
 This function will be on the `client` side to send processing requests and return a Promise containing processed results from `receive` function
 
 ```ts
 function useSend(
   sender: Sender, // contains `postMessage` function to send processing request
-  receiver: Receiver // contains 2 functions `addEventLister` and `removeEventListener` to listen to and cancel the event `message` containing the results processed through the `receive` function
+  receiver: Receiver // contains 2 functions `addEventLister` and `removeEventListener` to listen to and cancel the event `message` containing the results processed through the `receive` function,
+  timeout: boolean | number = 30000 // the interval that waits for data to return if the timeout throws a `TIMEOUT` error. Default is 30_0000
 ): send
 
 function send<Controllers>(
