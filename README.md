@@ -1,8 +1,6 @@
 # message-port-api
 
-a repository npm package
-
-[https://tachibana-shin.github.io/message-port-api](https://tachibana-shin.github.io/message-port-api)
+A simple package that allows you to simplify the use of [MessagePort API](https://developer.mozilla.org/en-US/docs/Web/API/MessagePort) more easily (Worker, IFrame...)
 
 [![Build](https://github.com/tachibana-shin/message-port-api/actions/workflows/test.yml/badge.svg)](https://github.com/tachibana-shin/message-port-api/actions/workflows/test.yml)
 [![NPM](https://badge.fury.io/js/message-port-api.svg)](http://badge.fury.io/js/message-port-api)
@@ -103,8 +101,6 @@ await send(
   ["red"]
 )
 ```
-
-````
 
 ## API
 
