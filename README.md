@@ -27,19 +27,15 @@ pnpm add message-port-api
 worker.ts
 
 ```ts
-import { receive } from "message-port-api"
+import { useReceive } from "message-port-api"
 
-const controllers = receive(
-  {
-    receiver: self,
-    sender: self
-  },
-  {
-    sum(a: number, b: number) {
-      return a + b
-    }
+const receive = useReceive(self)
+
+const controllers = receive({
+  sum(a: number, b: number) {
+    return a + b
   }
-)
+})
 
 export type Controller = typeof controller
 ```
@@ -49,19 +45,13 @@ index.ts
 ```ts
 import Worker from "./worker?worker"
 import type { Controller } from "./worker"
+import { useSend } from "message-port-api"
 
 const worker = new Worker()
 
-console.log(
-  await sender<Controller>(
-    {
-      receiver: worker,
-      sender: worker
-    },
-    "sum",
-    [1, 2]
-  )
-) // 3
+const send = useSend(worker)
+
+console.log(await send<Controller>("sum", [1, 2])) // 3
 ```
 
 ### IFrame
@@ -69,13 +59,11 @@ console.log(
 iframe
 
 ```ts
-import { receive } from "message-port-api"
+import { useReceive } from "message-port-api"
+
+const receive = useReceive(window, parent)
 
 receive(
-  {
-    receiver: parent,
-    sender: window
-  },
   {
     changeBg(color: string) {
       document.body.style.backgroundColor = color
@@ -90,47 +78,40 @@ receive(
 main.ts
 
 ```ts
-import { send } from "message-port-api"
+import { useSend } from "message-port-api"
 
-await send(
-  {
-    get receiver() {
-      return iframe.contentWindow
-    },
-    sender: window
-  },
-  "changeBg",
-  ["red"]
-)
+const send = useSend(window, () => iframe.contentWindow)
+
+await send("changeBg", ["red"])
 ```
 
 ## API
 
-### receive
-
+### useReceive
 This function will be located on the `host` side to handle the requested tasks
 
 ```ts
+function useReceive(
+  sender: Sender, // contains `postMessage` function to send return results
+  receiver: Receiver // contains 2 functions `addEventListener` and `removeEventListener` to listen to and cancel the `message` event
+): receive
+
 function receive(
-  config: {
-    receiver: Receiver // contains `postMessage` function to send return results
-    sender: Sender // contains 2 functions `addEventListener` and `removeEventListener` to listen to and cancel the `message` event
-  },
   controllers: Record<string, Function>, // processing functions
   targetOptions?: string | WindowPostMessageOptions // option 2 propagates to `postMessage`
 ): Controller
 ```
 
-### sender
-
+### useSend
 This function will be on the `client` side to send processing requests and return a Promise containing processed results from `receive` function
 
 ```ts
-function sender<Controllers>(
-  config: {
-    receiver: Receiver // contains `postMessage` function to send processing request
-    sender: Sender // contains 2 functions `addEventLister` and `removeEventListener` to listen to and cancel the event `message` containing the results processed through the `receive` function
-  },
+function useSend(
+  sender: Sender, // contains `postMessage` function to send processing request
+  receiver: Receiver // contains 2 functions `addEventLister` and `removeEventListener` to listen to and cancel the event `message` containing the results processed through the `receive` function
+): send
+
+function send<Controllers>(
   name: keyof Controllers, // function name for handling
   arguments: Arguments<Controllers[name]>, // processing function call parameter
   targetOptions?: string | WindowPostMessageOptions // option 2 propagates to `postMessage`
