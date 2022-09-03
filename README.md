@@ -2,6 +2,8 @@
 
 A simple package that allows you to simplify the use of [MessagePort API](https://developer.mozilla.org/en-US/docs/Web/API/MessagePort) more easily (Worker, IFrame...)
 
+> This is a very simple package. it cannot transfer complex data such as `function` or `class`. if you want to use `API` containing complex data use [workercom](https://npmjs.org/package/workercom)
+
 [![Build](https://github.com/tachibana-shin/message-port-api/actions/workflows/test.yml/badge.svg)](https://github.com/tachibana-shin/message-port-api/actions/workflows/test.yml)
 [![NPM](https://badge.fury.io/js/message-port-api.svg)](http://badge.fury.io/js/message-port-api)
 [![Size](https://img.shields.io/bundlephobia/minzip/message-port-api/latest)](https://npmjs.org/package/message-port-api)
@@ -117,7 +119,7 @@ function receive(
   controllers: Record<string, Function>, // processing functions
   targetOptions?: string | WindowPostMessageOptions // option 2 propagates to `postMessage`
 ): Controller
-````
+```
 
 ### sender
 

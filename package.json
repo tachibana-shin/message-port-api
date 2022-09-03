@@ -50,6 +50,11 @@
   "homepage": "https://tachibana-shin.github.io/message-port-api",
   "keywords": [
     "message-port-api",
+    "message port",
+    "simple",
+    "comlink",
+    "workercom",
+    "typed-worker",
     "Tachibana Shin",
     "tachibana-shin"
   ],
