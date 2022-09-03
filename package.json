@@ -1,6 +1,6 @@
 {
   "name": "message-port-api",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "A simple package that allows you to simplify the use of `MessagePort API` more easily (Worker, IFrame...)",
   "scripts": {
     "format": "prettier -w src",
